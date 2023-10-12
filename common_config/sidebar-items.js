@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["metadata_store_dir"],"struct":["KvStoreConfig","WalConfig"]};
