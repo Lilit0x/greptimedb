@@ -448,6 +448,14 @@
 <a href="#448" id="448">448</a>
 <a href="#449" id="449">449</a>
 <a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2023 Greptime Team
 //
 // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
@@ -507,7 +515,10 @@
         task_fn: BoxedTaskFunction&lt;Error&gt;,
         should_report: Arc&lt;AtomicBool&gt;,
     ) -&gt; <span class="self">Self </span>{
-        GreptimeDBTelemetryTask::Enable((RepeatedTask::new(interval, task_fn), should_report))
+        GreptimeDBTelemetryTask::Enable((
+            RepeatedTask::new(interval, task_fn).with_initial_delay(<span class="prelude-val">Some</span>(Duration::ZERO)),
+            should_report,
+        ))
     }
 
     <span class="kw">pub fn </span>disable() -&gt; <span class="self">Self </span>{
@@ -657,6 +668,7 @@
     working_home: <span class="prelude-ty">Option</span>&lt;String&gt;,
     telemetry_url: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
     should_report: Arc&lt;AtomicBool&gt;,
+    report_times: usize,
 }
 
 <span class="attr">#[async_trait::async_trait]
@@ -689,6 +701,7 @@
             client: client.ok(),
             telemetry_url: TELEMETRY_URL,
             should_report,
+            report_times: <span class="number">0</span>,
         }
     }
 
@@ -706,8 +719,11 @@
                 };
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(client) = <span class="self">self</span>.client.as_ref() {
-                    <span class="macro">info!</span>(<span class="string">&quot;reporting greptimedb version: {:?}&quot;</span>, data);
+                    <span class="kw">if </span><span class="self">self</span>.report_times == <span class="number">0 </span>{
+                        <span class="macro">info!</span>(<span class="string">&quot;reporting greptimedb version: {:?}&quot;</span>, data);
+                    }
                     <span class="kw">let </span>result = client.post(<span class="self">self</span>.telemetry_url).json(<span class="kw-2">&amp;</span>data).send().<span class="kw">await</span>;
+                    <span class="self">self</span>.report_times += <span class="number">1</span>;
                     <span class="macro">debug!</span>(<span class="string">&quot;report version result: {:?}&quot;</span>, result);
                     result.ok()
                 } <span class="kw">else </span>{
